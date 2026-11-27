@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supermercado Ideal · Catu-BA</title>
+<meta name="description" content="Supermercado Ideal em Catu-BA. Unidades Pioneiro e Planalto, ofertas toda semana e encarte novo toda sexta.">
+<link rel="icon" href="img/carrinho.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--azul:#0731CA;--azul-esc:#072180;--lar:#FF6200;--lar2:#FF8000;--tinta:#0B1433;--fundo:#F4F6FC}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Archivo,system-ui,sans-serif;color:var(--tinta);background:var(--fundo);min-height:100vh}
+body:before{content:"";position:absolute;inset:0 0 auto;height:260px;background:linear-gradient(160deg,var(--azul) 0%,var(--azul-esc) 100%);z-index:-1;border-radius:0 0 40px 40px}
+main{max-width:460px;margin:0 auto;padding:28px 18px 40px}
+.topo{background:#fff;border-radius:24px;padding:22px 18px 18px;text-align:center;box-shadow:0 18px 40px -18px rgba(7,33,128,.45)}
+.topo img{width:100%;max-width:300px;height:auto}
+.topo p{margin-top:8px;font-weight:500;color:#4A5478}
+.status{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:6px 12px;border-radius:99px;font-size:.85rem;font-weight:700;background:#EEF1FB}
+.status{background:#FDECEC;color:#B42318;transition:background .3s,color .3s}
+.status i{width:10px;height:10px;border-radius:50%;background:#E5322D;animation:piscaVerm 1.2s ease-in-out infinite}
+.status.aberto{background:#E7F8EF;color:#067647}
+.status.aberto i{background:#17B26A;animation:piscaVerde 1.2s ease-in-out infinite}
+@keyframes piscaVerm{0%,100%{box-shadow:0 0 0 0 rgba(229,50,45,.55);opacity:1}50%{box-shadow:0 0 0 7px rgba(229,50,45,0);opacity:.45}}
+@keyframes piscaVerde{0%,100%{box-shadow:0 0 0 0 rgba(23,178,106,.55);opacity:1}50%{box-shadow:0 0 0 7px rgba(23,178,106,0);opacity:.45}}
+h2{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:#6B7499;margin:26px 4px 10px;font-weight:700}
+.oferta{margin-top:16px;border-radius:22px;padding:18px;color:#fff;background:linear-gradient(135deg,var(--lar),var(--lar2));position:relative;overflow:hidden}
+.oferta:after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;background:url(img/carrinho.svg) center/contain no-repeat;opacity:.18;filter:brightness(0) invert(1)}
+.oferta b{display:block;font-size:1.35rem;font-weight:900;line-height:1.1}
+.oferta span{display:block;margin-top:6px;font-weight:500;opacity:.95}
+.conta{display:flex;gap:8px;margin-top:14px}
+.conta div{flex:1;background:rgba(255,255,255,.18);border-radius:12px;padding:8px 0;text-align:center}
+.conta strong{display:block;font-size:1.3rem;font-weight:900}
+.conta small{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}
+.encarte{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}
+.card-encarte{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:14px;align-items:center;width:100%;background:#111;color:#fff;border-radius:20px;padding:10px;box-shadow:0 12px 26px -14px rgba(11,20,51,.6)}
+.thumb{position:relative;flex:0 0 96px;height:120px;border-radius:14px;overflow:hidden;background:#222}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;opacity:0;transition:opacity .8s}
+.thumb img.on{opacity:1}
+.card-encarte .txt b{display:block;font-size:1.05rem;font-weight:900}
+.card-encarte .txt small{display:block;opacity:.75;margin-top:2px;font-size:.82rem}
+.card-encarte .txt em{display:inline-block;margin-top:10px;font-style:normal;font-weight:700;font-size:.85rem;background:linear-gradient(135deg,var(--lar),var(--lar2));padding:7px 14px;border-radius:99px}
+.regras{font-size:.75rem;color:#7A82A3;margin:8px 4px 0;line-height:1.4}
+.regras a{color:var(--azul);font-weight:700}
+.lb{position:fixed;inset:0;z-index:2000;background:rgba(5,10,30,.94);display:flex;flex-direction:column;justify-content:center;padding:16px 0}
+.lb[hidden]{display:none}
+.lb-trilho{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.lb-trilho::-webkit-scrollbar{display:none}
+.lb-trilho{width:100%}
+.lb-trilho img{flex:0 0 100%;width:100%;min-width:0;max-height:78vh;object-fit:contain;scroll-snap-align:center}
+.lb-fechar{position:absolute;top:12px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:var(--tinta);font-size:1.6rem;line-height:1;cursor:pointer;z-index:2}
+.lb-aviso{color:#AEB6D6;text-align:center;font-size:.75rem;margin-top:10px;padding:0 20px}
+.videos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px}
+.vid{all:unset;box-sizing:border-box;cursor:pointer;position:relative;aspect-ratio:9/14;border-radius:18px;overflow:hidden;background:#111;box-shadow:0 10px 24px -14px rgba(11,20,51,.6)}
+.vid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vid:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(5,10,30,.85))}
+.vid .play{position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.75);color:rgba(255,255,255,.9);display:grid;place-items:center;font-size:1.1rem;padding-left:4px;z-index:1;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.vid-txt{position:absolute;left:12px;right:12px;bottom:12px;color:#fff;z-index:1}
+.vid-txt b{display:block;font-weight:900}
+.vid-txt small{font-size:.75rem;opacity:.85}
+#lbv video{width:100%;max-height:82vh;background:#000}
+.aviso-ig{margin-top:10px;background:linear-gradient(135deg,var(--azul),var(--azul-esc));color:#fff;border-radius:18px;padding:14px 16px;font-size:.88rem;line-height:1.45}
+.aviso-ig>b{display:block;font-size:1rem;margin-bottom:4px}
+.aviso-ig p+p{margin-top:6px}
+.aviso-btns{display:flex;gap:8px;margin-top:12px}
+.aviso-btns a{flex:1;text-align:center;text-decoration:none;font-weight:700;font-size:.85rem;padding:9px 6px;border-radius:99px;background:#fff;color:var(--azul)}
+.aviso-btns a+a{background:linear-gradient(135deg,var(--lar),var(--lar2));color:#fff}
+.logo-anim{position:relative;width:100%;max-width:300px;margin:0 auto;aspect-ratio:473/157}
+.logo-anim img{position:absolute;inset:0;width:100%;height:100%}
+.logo-carro{clip-path:inset(0 53% 0 0);animation:carroPara .55s cubic-bezier(.15,.85,.3,1.25) 1.15s both}
+.logo-super{clip-path:inset(0 0 44.6% 47%);animation:limpa .5s cubic-bezier(.6,0,.2,1) 1.55s both}
+.logo-ideal{clip-path:inset(65% 0 0 47%);transform-origin:70% 85%;animation:pula .55s cubic-bezier(.2,.9,.3,1.4) 1.85s both}
+.logo-ponto{clip-path:inset(54.5% 40% 34.5% 55.2%);animation:pingo .6s cubic-bezier(.3,1.6,.5,1) 2.25s both}
+@keyframes carroPara{0%{transform:translateX(-60px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes limpa{0%{clip-path:inset(0 100% 44.6% 47%)}100%{clip-path:inset(0 0 44.6% 47%)}}
+@keyframes pula{0%{transform:scale(.4) translateY(30%);opacity:0}100%{transform:none;opacity:1}}
+@keyframes pingo{0%{transform:translateY(-70px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes aparece{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.passagem{position:fixed;inset:0;z-index:5000;background:#fff;overflow:hidden;pointer-events:auto;animation:somePassagem .35s ease 1.15s forwards}
+.passagem .grande{position:absolute;top:50%;left:0;width:min(78vw,420px);transform:translate(-110%,-55%);animation:cruza 1.25s cubic-bezier(.45,.05,.55,.95) both}
+.passagem .grande img{width:100%;display:block;animation:balanca .25s ease-in-out infinite alternate}
+.passagem .vento{position:absolute;right:88%;height:10px;border-radius:9px;background:linear-gradient(90deg,transparent,var(--lar2))}
+.passagem .v1{top:56%;width:60%}.passagem .v2{top:66%;width:45%}.passagem .v3{top:76%;width:30%}
+@keyframes cruza{0%{transform:translate(-110%,-55%)}100%{transform:translate(calc(100vw + 10%),-55%)}}
+@keyframes balanca{from{transform:translateY(0) rotate(-1.5deg)}to{transform:translateY(-6px) rotate(1deg)}}
+@keyframes somePassagem{to{opacity:0;visibility:hidden}}
+main>section.topo~*{animation:aparece .5s ease both;animation-delay:calc(1.6s + var(--i,0) * .06s)}
+.topo{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.passagem{display:none}.logo-anim img,main>*,main *{animation:none!important}}
+/* animações leves + resposta ao toque */
+.btn,.card-encarte,.vid,.aviso-btns a,.lb-seta,.lb-fechar{position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:transform .15s ease,border-color .15s,box-shadow .2s}
+.btn:active,.card-encarte:active,.vid:active,.aviso-btns a:active{transform:scale(.96)}
+.lb-seta:active,.lb-fechar:active{transform:translateY(-50%) scale(.88)}
+.lb-fechar:active{transform:scale(.88)}
+.btn .seta{transition:transform .2s}
+.btn:hover .seta{transform:translateX(4px)}
+.btn.lar .ic svg,.btn:not(.ig) .ic svg{animation:pinoPula 2.6s ease-in-out infinite;transform-origin:50% 100%}
+.btn:not(.lar):not(.ig) .ic svg{animation-delay:1.3s}
+@keyframes pinoPula{0%,62%,100%{transform:translateY(0) scale(1,1)}70%{transform:translateY(-6px) scale(.95,1.05)}78%{transform:translateY(0) scale(1.08,.92)}84%{transform:translateY(-2px)}90%{transform:none}}
+.btn.ig .ic{animation:brilho 3s ease-in-out infinite}
+@keyframes brilho{0%,80%,100%{transform:none}88%{transform:scale(1.1) rotate(-6deg)}94%{transform:scale(1)}}
+.card-encarte .txt em{animation:chama 2.2s ease-in-out infinite}
+@keyframes chama{0%,100%{box-shadow:0 0 0 0 rgba(255,98,0,.6)}60%{box-shadow:0 0 0 10px rgba(255,98,0,0)}}
+.vid .play{animation:playPulsa 2s ease-in-out infinite}
+@keyframes playPulsa{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.5)}60%{box-shadow:0 0 0 12px rgba(255,255,255,0)}}
+.vid img{transition:transform .5s}
+.vid:hover img{transform:scale(1.06)}
+.onda{position:absolute;border-radius:50%;background:rgba(7,49,202,.18);transform:scale(0);animation:onda .55s ease-out forwards;pointer-events:none;z-index:3}
+.card-encarte .onda,.vid .onda,.aviso-btns a+a .onda{background:rgba(255,255,255,.35)}
+@keyframes onda{to{transform:scale(1);opacity:0}}
+#regras{scroll-margin-top:20px}
+.lb-seta{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:var(--tinta);font-size:1.8rem;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);z-index:2}
+.lb-seta.esq{left:8px}.lb-seta.dir{right:8px}
+.lb-trilho{transition:transform .2s,opacity .2s}
+.pontos{display:flex;justify-content:center;gap:6px;margin-top:10px}
+.pontos i{width:8px;height:8px;border-radius:99px;background:#C9D0E8;transition:all .3s}
+.pontos i.on{width:22px;background:var(--lar)}
+.aviso{margin-top:12px;background:#FFF4EC;border:1px solid #FFD9BF;border-radius:16px;padding:12px 14px;font-size:.8rem;line-height:1.45;color:#6B4A33}
+.aviso b{display:block;color:#C24A00;margin-bottom:4px;font-size:.85rem}
+.sobre{background:#fff;border-radius:18px;padding:14px 16px;line-height:1.5;font-size:.95rem}
+.sobre p+p{margin-top:8px}
+footer p{margin-top:6px;line-height:1.45;max-width:380px;margin-inline:auto}
+.encarte a{flex:0 0 100%;scroll-snap-align:start;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 10px 24px -14px rgba(11,20,51,.5)}
+.encarte img{display:block;width:100%;height:auto}
+.legenda{font-size:.85rem;color:#6B7499;margin:8px 4px 0}
+.btn{display:flex;align-items:center;gap:14px;background:#fff;border-radius:18px;padding:14px 16px;margin-bottom:10px;text-decoration:none;color:inherit;border:2px solid transparent;transition:transform .15s,border-color .15s}
+.btn:hover{transform:translateY(-2px);border-color:var(--azul)}
+.btn .ic{flex:0 0 44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#fff;background:var(--azul)}
+.btn.lar .ic{background:var(--lar)}
+.btn.ig .ic{background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)}
+.btn b{display:block;font-weight:700}
+.btn small{color:#6B7499;font-size:.85rem}
+.btn .seta{margin-left:auto;color:#9AA3C0;font-size:1.2rem}
+#mapa{height:280px;border-radius:20px;overflow:hidden;box-shadow:0 10px 24px -14px rgba(11,20,51,.5)}
+.pino{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--lar);border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+.pino.az{background:var(--azul)}
+.horario{background:#fff;border-radius:18px;padding:14px 16px}
+.horario div{display:flex;justify-content:space-between;padding:6px 0;font-weight:500}
+.horario div+div{border-top:1px dashed #DDE2F2}
+footer{text-align:center;font-size:.78rem;color:#8A92B2;margin-top:26px}
+</style>
+</head>
+<body>
+<div class="passagem" id="passagem" aria-hidden="true">
+  <div class="grande"><span class="vento v1"></span><span class="vento v2"></span><span class="vento v3"></span><img src="img/carrinho.svg" alt=""></div>
+</div>
+<main>
+  <section class="topo">
+    <div class="logo-anim" role="img" aria-label="Supermercado Ideal"><img class="logo-carro" src="img/logo.png" alt=""><img class="logo-super" src="img/logo.png" alt=""><img class="logo-ideal" src="img/logo.png" alt=""><img class="logo-ponto" src="img/logo.png" alt=""></div>
+    <p>O supermercado Ideal para seu dia a dia · Catu-BA</p>
+    <div class="status" id="status"><i></i><span>…</span></div>
+  </section>
+
+  <section class="oferta">
+    <b id="of-tit">Ofertas toda semana.<br>Toda sexta tem encarte novo!</b>
+    <span id="of-sub">Fica de olho no Insta pra não perder nenhum preço baixo.</span>
+    <div class="conta" id="conta"></div>
+  </section>
+
+  <div id="bloco-encarte">
+  <h2 id="tit-encarte">Encarte da semana</h2>
+  <button class="card-encarte" id="abrir-encarte" type="button">
+    <span class="thumb"><img src="img/encarte1.jpg" alt=""><img src="img/encarte2.jpg" alt=""></span>
+    <span class="txt"><b>Ver encarte completo</b><small id="leg-encarte">Toque para abrir em tela cheia</small><em>Abrir encarte</em></span>
+  </button>
+  <p class="regras">Válido nas lojas físicas, no período do encarte e enquanto durarem os estoques. Imagens ilustrativas, embalagens podem variar. <a href="#regras">Ver regras</a></p>
+  </div>
+
+  <div class="lb" id="lb" hidden>
+    <button class="lb-fechar" id="lb-fechar" type="button" aria-label="Fechar">×</button>
+    <div class="lb-trilho" id="lb-trilho">
+      <img src="img/encarte1.jpg" alt="Encarte página 1">
+      <img src="img/encarte2.jpg" alt="Encarte página 2">
+    </div>
+    <button class="lb-seta esq" id="lb-ant" type="button" aria-label="Anterior">‹</button>
+    <button class="lb-seta dir" id="lb-prox" type="button" aria-label="Próxima">›</button>
+    <div class="pontos" id="pontos"></div>
+    <p class="lb-aviso">Arraste pra baixo pra fechar · imagens ilustrativas, sujeito a estoque</p>
+  </div>
+
+  <h2>Nossas unidades</h2>
+  <a class="btn lar" href="https://maps.app.goo.gl/y5RaHDEiVjraDxjZA" target="_blank" rel="noopener">
+    <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg></span>
+    <span><b>Unidade Pioneiro · Loja 2</b><small>Rua José Visco, 10 · abrir rota</small></span><span class="seta">›</span>
+  </a>
+  <a class="btn" href="https://www.google.com/maps/search/?api=1&query=-12.3778511,-38.3878151" target="_blank" rel="noopener">
+    <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg></span>
+    <span><b>Unidade Planalto · Loja 1</b><small>Em frente à Urbis · abrir rota</small></span><span class="seta">›</span>
+  </a>
+
+  <div class="videos">
+    <button class="vid" type="button" data-video="img/video-pioneiro.mp4">
+      <img src="img/capa-pioneiro.jpg" alt=""><span class="play">▶</span>
+      <span class="vid-txt"><b>Pioneiro</b><small>Vídeo de como chegar</small></span>
+    </button>
+    <button class="vid" type="button" data-video="img/video-planalto.mp4">
+      <img src="img/capa-planalto.jpg" alt=""><span class="play">▶</span>
+      <span class="vid-txt"><b>Planalto</b><small>Vídeo de como chegar</small></span>
+    </button>
+  </div>
+
+  <div class="lb" id="lbv" hidden>
+    <button class="lb-fechar" id="lbv-fechar" type="button" aria-label="Fechar">×</button>
+    <video id="lbv-video" playsinline controls preload="none"></video>
+    <p class="lb-aviso">Arraste pra baixo pra fechar</p>
+  </div>
+
+  <h2>Acompanhe as promoções</h2>
+  <a class="btn ig" id="btn-comunidade" href="https://www.instagram.com/supermercado.ideal_/" target="_blank" rel="noopener">
+    <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 20h5v-2a3 3 0 0 0-5.4-1.8M17 20H7m10 0v-2c0-.7-.1-1.3-.4-1.8M7 20H2v-2a3 3 0 0 1 5.4-1.8M7 20v-2c0-.7.1-1.3.4-1.8m0 0a5 5 0 0 1 9.2 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg></span>
+    <span><b>Grupo de promoções</b><small>Comunidade no Insta · receba as ofertas primeiro</small></span><span class="seta">›</span>
+  </a>
+  <a class="btn ig" href="https://www.instagram.com/supermercado.ideal_/" target="_blank" rel="noopener">
+    <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></span>
+    <span><b>@supermercado.ideal_</b><small>Siga no Instagram</small></span><span class="seta">›</span>
+  </a>
+
+  <h2>Sobre o Ideal</h2>
+  <div class="sobre">
+    <p>O <b>Supermercado Ideal</b> é o supermercado do dia a dia de Catu, na Bahia. São duas lojas, no <b>Pioneiro</b> e no <b>Planalto</b>, abertas todos os dias, inclusive domingos e feriados.</p>
+    <p>Toda semana tem oferta nova, e toda sexta sai encarte novo aqui e no Instagram.</p>
+    <p><b>Aceitamos:</b> Mastercard, Visa, American Express, Diners, Hipercard e Elo.</p>
+  </div>
+
+  <h2>Horário</h2>
+  <div class="horario">
+    <div><span>Segunda a sábado</span><b>7h às 19h30</b></div>
+    <div><span>Domingos e feriados</span><b>7h às 13h</b></div>
+  </div>
+  <div class="aviso-ig">
+    <b>🔔 Fique por dentro</b>
+    <p>Em casos extraordinários ou obrigatórios, a loja pode fechar ou mudar o horário. Avisamos tudo pelo Instagram.</p>
+    <p>Siga o <b>@supermercado.ideal_</b>, <b>ative as notificações</b> e entre no nosso <b>grupo de promoções</b> pra não perder nenhum aviso, oferta ou novidade.</p>
+    <div class="aviso-btns">
+      <a href="https://www.instagram.com/supermercado.ideal_/" target="_blank" rel="noopener">Seguir no Insta</a>
+      <a href="https://www.instagram.com/channel/69N6c-R3iXIHdNwh/" target="_blank" rel="noopener">Entrar no grupo</a>
+    </div>
+  </div>
+
+  <h2>Onde estamos</h2>
+  <div id="mapa"></div>
+
+  <footer>
+    <b>Supermercado Ideal · Catu-BA</b>
+    <p id="regras"><b>Regras das ofertas:</b> válidas somente nas lojas físicas, no período informado em cada encarte e enquanto durarem os estoques. Imagens meramente ilustrativas: embalagem, cor e versão do produto podem variar. Podemos limitar a quantidade por cliente. Erros de digitação ou de impressão serão corrigidos na loja. Os preços desta página não substituem os preços da loja.</p>
+  </footer>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ====== EDITE AQUI ======
+const COMUNIDADE = "https://www.instagram.com/channel/69N6c-R3iXIHdNwh/"; // cole o link da comunidade do Instagram aqui
+const ENCARTE = {
+  titulo: "Black do Ideal · 27 a 29/11",
+  legenda: "Só até domingo! Toque para abrir",
+  fim: "2026-11-29T13:00:00-03:00" // depois disso o encarte some sozinho
+};
+// ========================
+if (COMUNIDADE) document.getElementById('btn-comunidade').href = COMUNIDADE;
+if (ENCARTE.titulo) document.getElementById('tit-encarte').textContent = ENCARTE.titulo;
+if (ENCARTE.legenda) document.getElementById('leg-encarte').textContent = ENCARTE.legenda;
+const FIM_PROMO = ENCARTE.fim ? new Date(ENCARTE.fim) : null;
+const _t = new URLSearchParams(location.search).get("agora"); // teste: ?agora=2026-11-29T14:00
+const _off = _t ? new Date(_t) - Date.now() : 0;
+const agoraJa = () => new Date(Date.now() + _off);
+const promoAtiva = () => FIM_PROMO && agoraJa() < FIM_PROMO;
+
+// aberto agora?
+(function(){
+  const d = agoraJa(), dia = d.getDay(), m = d.getHours()*60 + d.getMinutes();
+  const fecha = dia === 0 ? 13*60 : 19*60+30, aberto = m >= 7*60 && m < fecha;
+  const el = document.getElementById('status');
+  el.classList.toggle('aberto', aberto);
+  el.querySelector('span').textContent = aberto
+    ? 'Aberto agora · fecha às ' + (dia === 0 ? '13h' : '19h30')
+    : 'Fechado agora · abre às 7h';
+})();
+
+// promo ativa: contagem até acabar · depois: encarte some e conta até a próxima sexta
+(function(){
+  const box = document.getElementById('conta');
+  let modo = null;
+  function tick(){
+    const agora = agoraJa(), ativa = promoAtiva();
+    if (ativa !== modo) {
+      modo = ativa;
+      document.getElementById('bloco-encarte').hidden = !ativa;
+      document.getElementById('of-tit').innerHTML = ativa
+        ? 'Corre que acaba!<br>' + ENCARTE.titulo.split('·')[0].trim() + ' termina em:'
+        : 'Ofertas toda semana.<br>Toda sexta tem encarte novo!';
+      document.getElementById('of-sub').textContent = ativa
+        ? 'Os preços do encarte valem até o fim da contagem.'
+        : 'Próximo encarte chega em:';
+    }
+    let alvo;
+    if (ativa) alvo = FIM_PROMO;
+    else {
+      alvo = new Date(agora); alvo.setHours(7,0,0,0);
+      let add = (5 - agora.getDay() + 7) % 7;
+      if (add === 0 && agora >= alvo) add = 7;
+      alvo.setDate(agora.getDate() + add);
+    }
+    let s = Math.max(0, Math.floor((alvo - agora)/1000));
+    const v = [Math.floor(s/86400), Math.floor(s%86400/3600), Math.floor(s%3600/60), s%60];
+    box.innerHTML = ['dias','horas','min','seg'].map((t,i)=>`<div><strong>${String(v[i]).padStart(2,'0')}</strong><small>${t}</small></div>`).join('');
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+// capa do cartão troca sozinha · encarte abre em tela cheia passando em ciclo
+(function(){
+  const capas = [...document.querySelectorAll('.thumb img')]; let c = 0;
+  capas[0].classList.add('on');
+  setInterval(() => { capas[c].classList.remove('on'); c = (c + 1) % capas.length; capas[c].classList.add('on'); }, 3000);
+
+  const lb = document.getElementById('lb'), trilho = document.getElementById('lb-trilho');
+  const itens = [...trilho.children], pontos = document.getElementById('pontos');
+  pontos.innerHTML = itens.map(() => '<i></i>').join('');
+  let pos = 0;
+  const atual = () => Math.round(trilho.scrollLeft / trilho.clientWidth);
+  const marca = () => { pos = atual(); [...pontos.children].forEach((p,i) => p.classList.toggle('on', i === pos)); };
+  trilho.addEventListener('scroll', marca, { passive: true });
+  const vai = i => { pos = i; trilho.scrollTo({ left: i * trilho.clientWidth, behavior: 'smooth' }); [...pontos.children].forEach((p,k) => p.classList.toggle('on', k === i)); };
+  let parado = 0, timer = null;
+  ['touchstart','pointerdown','wheel'].forEach(ev => trilho.addEventListener(ev, () => parado = Date.now(), { passive: true }));
+  const abrir = () => {
+    lb.hidden = false; document.body.style.overflow = 'hidden';
+    trilho.scrollLeft = 0; vai(0);
+    timer = setInterval(() => {
+      if (Date.now() - parado < 6000) return;
+      vai((pos + 1) % itens.length);
+    }, 3500);
+  };
+  const fechar = () => { lb.hidden = true; document.body.style.overflow = ''; clearInterval(timer); };
+  document.getElementById('abrir-encarte').addEventListener('click', abrir);
+  document.getElementById('lb-fechar').addEventListener('click', fechar);
+  const segura = () => parado = Date.now();
+  document.getElementById('lb-ant').addEventListener('click', () => { segura(); vai((pos - 1 + itens.length) % itens.length); });
+  document.getElementById('lb-prox').addEventListener('click', () => { segura(); vai((pos + 1) % itens.length); });
+  // arrastar pra baixo fecha
+  let y0 = null, x0 = 0;
+  lb.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener('touchmove', e => {
+    if (y0 === null) return;
+    const dy = e.touches[0].clientY - y0, dx = Math.abs(e.touches[0].clientX - x0);
+    if (dy > 0 && dy > dx) { trilho.style.transform = `translateY(${dy}px)`; trilho.style.opacity = Math.max(.3, 1 - dy / 400); }
+  }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    const dy = y0 === null ? 0 : e.changedTouches[0].clientY - y0;
+    trilho.style.transform = ''; trilho.style.opacity = ''; y0 = null;
+    if (dy > 100) fechar();
+  });
+  lb.addEventListener('click', e => { if (e.target === lb) fechar(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
+})();
+
+// vídeos de como chegar em tela cheia
+(function(){
+  const lb = document.getElementById('lbv'), v = document.getElementById('lbv-video');
+  const fechar = () => { v.pause(); lb.hidden = true; document.body.style.overflow = ''; };
+  document.querySelectorAll('.vid').forEach(b => b.addEventListener('click', () => {
+    v.src = b.dataset.video; lb.hidden = false; document.body.style.overflow = 'hidden';
+    v.play().catch(() => {});
+  }));
+  document.getElementById('lbv-fechar').addEventListener('click', fechar);
+  lb.addEventListener('click', e => { if (e.target === lb) fechar(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !lb.hidden) fechar(); });
+  let y0 = null;
+  lb.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+  lb.addEventListener('touchmove', e => { if (y0 === null) return; const dy = e.touches[0].clientY - y0; if (dy > 0) { v.style.transform = `translateY(${dy}px)`; v.style.opacity = Math.max(.3, 1 - dy/400); } }, { passive: true });
+  lb.addEventListener('touchend', e => { const dy = y0 === null ? 0 : e.changedTouches[0].clientY - y0; v.style.transform = ''; v.style.opacity = ''; y0 = null; if (dy > 100) fechar(); });
+})();
+
+// passagem do carrinho: toque pula
+(function(){
+  const p = document.getElementById('passagem');
+  p.addEventListener('click', () => p.remove());
+  p.addEventListener('animationend', e => { if (e.animationName === 'somePassagem') p.remove(); });
+})();
+// onda no toque
+document.addEventListener('pointerdown', e => {
+  const alvo = e.target.closest('.btn,.card-encarte,.vid,.aviso-btns a');
+  if (!alvo) return;
+  const r = alvo.getBoundingClientRect(), t = Math.max(r.width, r.height) * 2;
+  const o = document.createElement('span'); o.className = 'onda';
+  o.style.cssText = `width:${t}px;height:${t}px;left:${e.clientX - r.left - t/2}px;top:${e.clientY - r.top - t/2}px`;
+  alvo.appendChild(o); setTimeout(() => o.remove(), 600);
+  if (navigator.vibrate) navigator.vibrate(8);
+});
+// entrada em cascata
+[...document.querySelectorAll('main>*')].forEach((el,i) => el.style.setProperty('--i', Math.min(i, 8)));
+
+// mapa com as 2 unidades
+(function(){
+  if (!window.L) return;
+  const lojas = [
+    { nome: 'Unidade Pioneiro', ll: [-12.3705024, -38.3857255], url: 'https://maps.app.goo.gl/y5RaHDEiVjraDxjZA', cls: '' },
+    { nome: 'Unidade Planalto', ll: [-12.3778511, -38.3878151], url: 'https://www.google.com/maps/search/?api=1&query=-12.3778511,-38.3878151', cls: 'az' }
+  ];
+  const mapa = L.map('mapa', { scrollWheelZoom: false, attributionControl: true });
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OpenStreetMap'
+  }).addTo(mapa);
+  const pts = lojas.map(l => {
+    L.marker(l.ll, { icon: L.divIcon({ className: '', html: `<div class="pino ${l.cls}"></div>`, iconSize: [34,34], iconAnchor: [17,34] }) })
+      .addTo(mapa).bindPopup(`<b>${l.nome}</b><br><a href="${l.url}" target="_blank">Abrir no Google Maps</a>`);
+    return l.ll;
+  });
+  mapa.fitBounds(pts, { padding: [40, 40] });
+})();
+</script>
+</body>
+</html>
