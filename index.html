@@ -8,7 +8,6 @@
 <link rel="icon" href="img/carrinho.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{--azul:#0731CA;--azul-esc:#072180;--lar:#FF6200;--lar2:#FF8000;--tinta:#0B1433;--fundo:#F4F6FC}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -133,7 +132,18 @@ footer p{margin-top:6px;line-height:1.45;max-width:380px;margin-inline:auto}
 .btn b{display:block;font-weight:700}
 .btn small{color:#6B7499;font-size:.85rem}
 .btn .seta{margin-left:auto;color:#9AA3C0;font-size:1.2rem}
-#mapa{height:280px;border-radius:20px;overflow:hidden;box-shadow:0 10px 24px -14px rgba(11,20,51,.5)}
+.mapa-box{background:#fff;border-radius:20px;padding:10px;box-shadow:0 10px 24px -14px rgba(11,20,51,.5)}
+.abas{display:flex;gap:6px;background:#EEF1FB;border-radius:99px;padding:4px}
+.abas button{flex:1;border:0;background:transparent;font:inherit;font-weight:700;color:#4A5478;padding:8px;border-radius:99px;cursor:pointer;transition:background .2s,color .2s}
+.abas button.on{background:var(--azul);color:#fff}
+.abas.mini{margin-top:8px;width:max-content}
+.abas.mini button{padding:5px 14px;font-size:.8rem}
+.abas.mini button.on{background:var(--lar)}
+#gmapa{display:block;width:100%;height:300px;border:0;border-radius:14px;margin-top:8px;background:#E8ECF6}
+.rota{display:flex;gap:8px;margin-top:10px}
+.rota a{flex:1;text-align:center;text-decoration:none;font-weight:700;font-size:.88rem;padding:11px 6px;border-radius:14px;background:linear-gradient(135deg,var(--lar),var(--lar2));color:#fff}
+.rota a+a{background:#33CCFF;color:#0B1433}
+.rota a:active,.abas button:active{transform:scale(.96)}
 .pino{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--lar);border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.3)}
 .pino.az{background:var(--azul)}
 .horario{background:#fff;border-radius:18px;padding:14px 16px}
@@ -240,7 +250,21 @@ footer{text-align:center;font-size:.78rem;color:#8A92B2;margin-top:26px}
   </div>
 
   <h2>Onde estamos</h2>
-  <div id="mapa"></div>
+  <div class="mapa-box">
+    <div class="abas" id="abas-loja">
+      <button type="button" class="on" data-loja="0">Pioneiro</button>
+      <button type="button" data-loja="1">Planalto</button>
+    </div>
+    <div class="abas mini" id="abas-tipo">
+      <button type="button" class="on" data-t="m">Mapa</button>
+      <button type="button" data-t="k">Satélite</button>
+    </div>
+    <iframe id="gmapa" title="Mapa da loja" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+    <div class="rota">
+      <a id="btn-rota" target="_blank" rel="noopener">🚗 Traçar rota</a>
+      <a id="btn-waze" target="_blank" rel="noopener">Abrir no Waze</a>
+    </div>
+  </div>
 
   <footer>
     <b>Supermercado Ideal · Catu-BA</b>
@@ -248,7 +272,6 @@ footer{text-align:center;font-size:.78rem;color:#8A92B2;margin-top:26px}
   </footer>
 </main>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ====== EDITE AQUI ======
 const COMUNIDADE = "https://www.instagram.com/channel/69N6c-R3iXIHdNwh/"; // cole o link da comunidade do Instagram aqui
@@ -392,23 +415,27 @@ document.addEventListener('pointerdown', e => {
 // entrada em cascata
 [...document.querySelectorAll('main>*')].forEach((el,i) => el.style.setProperty('--i', Math.min(i, 8)));
 
-// mapa com as 2 unidades
+// mapa Google: escolhe loja e mapa/satélite; rota abre no app
 (function(){
-  if (!window.L) return;
   const lojas = [
-    { nome: 'Unidade Pioneiro', ll: [-12.3705024, -38.3857255], url: 'https://maps.app.goo.gl/y5RaHDEiVjraDxjZA', cls: '' },
-    { nome: 'Unidade Planalto', ll: [-12.3778511, -38.3878151], url: 'https://www.google.com/maps/search/?api=1&query=-12.3778511,-38.3878151', cls: 'az' }
+    { nome: 'Pioneiro', ll: '-12.3705024,-38.3857255' },
+    { nome: 'Planalto', ll: '-12.3778511,-38.3878151' }
   ];
-  const mapa = L.map('mapa', { scrollWheelZoom: false, attributionControl: true });
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, attribution: '© OpenStreetMap'
-  }).addTo(mapa);
-  const pts = lojas.map(l => {
-    L.marker(l.ll, { icon: L.divIcon({ className: '', html: `<div class="pino ${l.cls}"></div>`, iconSize: [34,34], iconAnchor: [17,34] }) })
-      .addTo(mapa).bindPopup(`<b>${l.nome}</b><br><a href="${l.url}" target="_blank">Abrir no Google Maps</a>`);
-    return l.ll;
+  let loja = 0, tipo = 'm';
+  const f = document.getElementById('gmapa');
+  function mostra(){
+    const ll = lojas[loja].ll;
+    f.src = `https://maps.google.com/maps?q=${ll}&t=${tipo}&z=17&hl=pt-BR&output=embed`;
+    document.getElementById('btn-rota').href = `https://www.google.com/maps/dir/?api=1&destination=${ll}&travelmode=driving`;
+    document.getElementById('btn-waze').href = `https://waze.com/ul?ll=${ll}&navigate=yes`;
+  }
+  const liga = (id, fn) => document.getElementById(id).addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    [...b.parentNode.children].forEach(x => x.classList.toggle('on', x === b)); fn(b); mostra();
   });
-  mapa.fitBounds(pts, { padding: [40, 40] });
+  liga('abas-loja', b => loja = +b.dataset.loja);
+  liga('abas-tipo', b => tipo = b.dataset.t);
+  mostra();
 })();
 </script>
 </body>
