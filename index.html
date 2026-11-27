@@ -109,6 +109,9 @@ main>section.topo~*{animation:aparece .5s ease both;animation-delay:calc(1.6s + 
 .onda{position:absolute;border-radius:50%;background:rgba(7,49,202,.18);transform:scale(0);animation:onda .55s ease-out forwards;pointer-events:none;z-index:3}
 .card-encarte .onda,.vid .onda,.aviso-btns a+a .onda{background:rgba(255,255,255,.35)}
 @keyframes onda{to{transform:scale(1);opacity:0}}
+.credito{display:inline-block;margin-top:14px;padding:8px 14px;border-radius:99px;background:#0B1433;color:#fff;text-decoration:none;font-size:.78rem;transition:transform .15s}
+.credito b{font-weight:900}
+.credito:active{transform:scale(.96)}
 #regras{scroll-margin-top:20px}
 .lb-seta{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:var(--tinta);font-size:1.8rem;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);z-index:2}
 .lb-seta.esq{left:8px}.lb-seta.dir{right:8px}
@@ -269,6 +272,7 @@ footer{text-align:center;font-size:.78rem;color:#8A92B2;margin-top:26px}
   <footer>
     <b>Supermercado Ideal · Catu-BA</b>
     <p id="regras"><b>Regras das ofertas:</b> válidas somente nas lojas físicas, no período informado em cada encarte e enquanto durarem os estoques. Imagens meramente ilustrativas: embalagem, cor e versão do produto podem variar. Podemos limitar a quantidade por cliente. Erros de digitação ou de impressão serão corrigidos na loja. Os preços desta página não substituem os preços da loja.</p>
+    <a class="credito" href="https://rizeroficial.com/?utm_source=ideal-bio&utm_medium=rodape" target="_blank" rel="noopener">Site feito pela <b>Rizer</b> · aceleradora de marcas ↗</a>
   </footer>
 </main>
 
